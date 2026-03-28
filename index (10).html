@@ -1,0 +1,1019 @@
+<!-- OSA Trading Journal v5 - mobile layout -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
+<title>OSA Trading Journal | One Shot Algo</title>
+<link rel="manifest" href="manifest.json"/>
+<meta name="theme-color" content="#f8931b"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="OSA Journal"/>
+<link rel="apple-touch-icon" href="icons/icon-192.png"/>
+<meta name="description" content="OSA Trading Journal — Track, size, and review your One Shot Algo trades. Free, syncs across devices."/>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#000;--surface:#0d0d0d;--surface2:#141414;--surface3:#1a1a1a;--border:#222;--border2:#2e2e2e;--accent:#f8931b;--accent2:#d97a0f;--accent-dim:rgba(248,147,27,0.12);--accent-glow:rgba(248,147,27,0.28);--red:#ff4d6a;--red-dim:rgba(255,77,106,0.12);--gold:#fff;--gold-dim:rgba(255,255,255,0.08);--blue:#c8c8c8;--blue-dim:rgba(200,200,200,0.08);--text:#fff;--text2:#a0a0a0;--text3:#555;--mono:'JetBrains Mono',monospace;--display:'Syne',sans-serif;--radius:10px;--radius-lg:16px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--mono);font-size:13px;min-height:100vh;overflow-x:hidden;max-width:100vw}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.5}
+
+/* ── LOGIN ── */
+#loginScreen{position:fixed;inset:0;z-index:9999;background:#000;display:flex;align-items:center;justify-content:center;flex-direction:column}
+#loginScreen.hidden{display:none}
+.login-card{background:var(--surface);border:1px solid var(--border2);border-top:3px solid var(--accent);border-radius:var(--radius-lg);padding:48px 40px;width:100%;max-width:400px;text-align:center;box-shadow:0 40px 80px rgba(0,0,0,.8),0 0 60px rgba(248,147,27,.06)}
+.login-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:28px}
+.login-logo-text h1{font-family:var(--display);font-weight:800;font-size:22px;color:#fff;line-height:1.1;text-align:left}
+.login-logo-text p{font-size:9px;letter-spacing:2px;color:var(--text3);margin-top:3px;text-align:left}
+.login-tagline{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:32px;padding:0 8px}
+.login-tagline strong{color:var(--accent)}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:14px 20px;background:#fff;color:#1a1a1a;border:none;border-radius:var(--radius);font-family:var(--mono);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;letter-spacing:.3px}
+.btn-google:hover{background:#f0f0f0;transform:translateY(-1px);box-shadow:0 8px 24px rgba(248,147,27,.2)}
+.login-features{display:flex;justify-content:center;gap:20px;margin-top:28px;padding-top:24px;border-top:1px solid var(--border)}
+.login-feature{font-size:10px;color:var(--text3);text-align:center}
+.login-feature span{display:block;font-size:18px;margin-bottom:4px}
+.login-loading{display:none;flex-direction:column;align-items:center;gap:12px;margin-top:20px}
+.login-loading.show{display:flex}
+.spinner{width:24px;height:24px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── APP ── */
+.app{display:flex;min-height:100vh;position:relative;z-index:1}
+.sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;bottom:0;z-index:100;border-top:3px solid var(--accent)}
+.logo{padding:22px 20px 16px;border-bottom:1px solid var(--border)}
+.nav{padding:16px 12px;flex:1}
+.nav-section{font-size:9px;letter-spacing:2px;color:var(--text3);padding:8px 8px 4px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);cursor:pointer;color:var(--text2);transition:all .15s;margin-bottom:2px;font-size:12px;font-weight:500;border:1px solid transparent;user-select:none}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:var(--accent-dim);color:var(--accent);border-color:rgba(248,147,27,.25)}
+.nav-item .icon{font-size:15px;width:18px;text-align:center}
+.sidebar-user{padding:14px 16px;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.user-avatar{width:32px;height:32px;border-radius:50%;border:2px solid var(--accent);object-fit:cover;flex-shrink:0}
+.user-avatar-placeholder{width:32px;height:32px;border-radius:50%;background:var(--accent-dim);border:2px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.user-info{flex:1;min-width:0}
+.user-name{font-size:11px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-email{font-size:9px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sync-badge{display:inline-flex;align-items:center;gap:5px;font-size:9px;padding:3px 8px;border-radius:20px;background:var(--accent-dim);color:var(--accent);border:1px solid rgba(248,147,27,.2);margin-bottom:8px}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.btn-signout{width:100%;padding:7px;border-radius:var(--radius);background:transparent;border:1px solid var(--border2);color:var(--text3);font-family:var(--mono);font-size:10px;cursor:pointer;transition:all .15s}
+.btn-signout:hover{border-color:var(--red);color:var(--red)}
+.main{margin-left:220px;flex:1;padding:32px 36px;max-width:calc(100vw - 220px);position:relative}
+.main::before{content:'';position:fixed;top:0;left:220px;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(248,147,27,.4),transparent);pointer-events:none}
+.page-header{margin-bottom:28px}
+.page-header h2{font-family:var(--display);font-weight:800;font-size:26px}
+.page-header p{color:var(--text2);margin-top:4px;font-size:12px}
+.page-header .breadcrumb{font-size:10px;color:var(--text3);margin-bottom:6px;letter-spacing:1px;text-transform:uppercase}
+.section{display:none}
+.section.active{display:block}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;position:relative;overflow:hidden;transition:border-color .2s}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.stat-card.green::before{background:var(--accent)}.stat-card.red::before{background:var(--red)}.stat-card.gold::before{background:var(--gold)}.stat-card.blue::before{background:var(--blue)}
+.stat-card:hover{border-color:var(--border2)}
+.stat-label{font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:10px}
+.stat-value{font-family:var(--display);font-weight:800;font-size:28px;line-height:1}
+.stat-card.green .stat-value{color:var(--accent)}.stat-card.red .stat-value{color:var(--red)}.stat-card.gold .stat-value{color:var(--gold)}.stat-card.blue .stat-value{color:var(--blue)}
+.stat-sub{font-size:10px;color:var(--text3);margin-top:6px}
+.stat-icon{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:28px;opacity:.08}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:var(--display);font-weight:700;font-size:14px}
+.card-badge{font-size:9px;letter-spacing:1px;padding:3px 8px;border-radius:20px;font-weight:600}
+.badge-green{background:var(--accent-dim);color:var(--accent);border:1px solid rgba(248,147,27,.25)}
+.badge-red{background:var(--red-dim);color:var(--red)}.badge-gold{background:var(--gold-dim);color:var(--gold)}.badge-blue{background:var(--blue-dim);color:var(--blue)}
+.card-body{padding:20px}
+.chart-wrap{position:relative;height:220px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 14px;font-size:9px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--surface)}
+td{padding:12px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2);white-space:nowrap;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--surface2)}
+.td-pair{color:var(--text);font-weight:600}.td-win{color:var(--accent);font-weight:600}.td-loss{color:var(--red);font-weight:600}.td-be{color:#fff;font-weight:600}
+.td-screenshot a{color:var(--accent);text-decoration:none}.td-screenshot a:hover{text-decoration:underline}
+.td-delete{color:var(--text3);cursor:pointer;font-size:14px}.td-delete:hover{color:var(--red)}
+.osa-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px}
+.osa-scalp{background:rgba(248,147,27,.1);color:#ffb05c}.osa-day{background:var(--accent-dim);color:var(--accent)}.osa-swing{background:rgba(255,255,255,.07);color:#fff}.osa-htf{background:rgba(248,147,27,.2);color:#ffb05c}
+.session-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
+.sess-london{background:rgba(255,255,255,.07);color:#fff}.sess-ny{background:var(--accent-dim);color:var(--accent)}.sess-asian{background:rgba(200,200,200,.07);color:#c8c8c8}.sess-overlap{background:rgba(255,77,106,.12);color:var(--red)}.sess-sydney{background:rgba(248,147,27,.1);color:#ffb05c}
+.form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{grid-column:1/-1}
+label{font-size:10px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase}
+label span.req{color:var(--red)}
+label span.hint{color:var(--accent);font-size:9px;display:block;margin-top:2px;text-transform:none;letter-spacing:0;font-weight:400}
+input,select,textarea{background:var(--surface2);border:1px solid var(--border2);color:var(--text);border-radius:var(--radius);padding:10px 12px;font-family:var(--mono);font-size:12px;outline:none;transition:border-color .15s,box-shadow .15s;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+textarea{resize:vertical;min-height:80px}
+select option{background:var(--surface2)}
+.calc-result{background:var(--surface2);border:1px solid var(--accent);border-radius:var(--radius);padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:8px}
+.calc-item label{color:var(--text3);font-size:9px}
+.calc-item .val{color:var(--accent);font-size:16px;font-weight:700;font-family:var(--display);margin-top:4px}
+.calc-item .val.neutral{color:var(--text)}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:var(--radius);border:none;font-family:var(--mono);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;letter-spacing:.5px}
+.btn-primary{background:var(--accent);color:#000}.btn-primary:hover{background:var(--accent2);transform:translateY(-1px)}
+.btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border2)}.btn-secondary:hover{border-color:var(--border);color:var(--text)}
+.btn-danger{background:var(--red-dim);color:var(--red);border:1px solid rgba(255,77,106,.3)}.btn-danger:hover{background:rgba(255,77,106,.2)}
+.form-actions{display:flex;gap:12px;margin-top:24px;justify-content:flex-end}
+.divider{border:none;border-top:1px solid var(--border);margin:20px 0}
+.info-box{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--radius);padding:14px 16px;margin-bottom:20px}
+.info-box.red{border-left-color:var(--red)}.info-box.gold{border-left-color:var(--gold)}
+.info-box p{font-size:11px;color:var(--text2);line-height:1.6}
+.info-box strong{color:var(--accent)}.info-box.red strong{color:var(--red)}.info-box.gold strong{color:var(--gold)}
+.checklist{display:flex;flex-direction:column;gap:10px}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);cursor:pointer;transition:all .15s}
+.check-item:hover{border-color:var(--border2)}.check-item.checked{border-color:rgba(248,147,27,.35);background:var(--accent-dim)}
+.check-box{width:18px;height:18px;border-radius:4px;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;margin-top:1px;transition:all .15s}
+.check-item.checked .check-box{background:var(--accent);border-color:var(--accent)}
+.check-mark{color:#000;font-size:11px;font-weight:700;display:none}.check-item.checked .check-mark{display:block}
+.check-text{font-size:12px;color:var(--text2);line-height:1.5}.check-item.checked .check-text{color:var(--accent)}
+.equity-stats{display:flex;gap:24px;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.eq-label{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
+.eq-val{font-family:var(--display);font-weight:700;font-size:18px;margin-top:2px}
+.empty-state{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-state .icon{font-size:40px;margin-bottom:12px}
+.empty-state h3{font-family:var(--display);font-weight:700;font-size:16px;color:var(--text2);margin-bottom:6px}
+.empty-state p{font-size:12px;line-height:1.6}
+.settings-section{margin-bottom:28px}
+.settings-label{font-size:10px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:12px}
+.perf-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
+.perf-row:last-child{border-bottom:none}
+.perf-label{font-size:11px;color:var(--text2)}.perf-val{font-weight:600;font-size:13px}
+.perf-bar-wrap{flex:1;margin:0 16px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.perf-bar{height:100%;border-radius:2px;transition:width .5s ease}
+#savingIndicator{position:fixed;top:16px;right:16px;z-index:8888;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:8px 14px;border-radius:var(--radius);font-size:11px;color:var(--text2);display:none;align-items:center;gap:8px}
+#savingIndicator.show{display:flex}
+.toast{position:fixed;bottom:28px;right:28px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);padding:14px 18px;border-radius:var(--radius);font-size:12px;color:var(--text);z-index:9999;transform:translateX(120%);transition:transform .3s cubic-bezier(.34,1.56,.64,1);max-width:280px}
+.toast.show{transform:translateX(0)}.toast.error{border-left-color:var(--red)}
+.toast strong{display:block;margin-bottom:2px;color:var(--accent)}.toast.error strong{color:var(--red)}
+::-webkit-scrollbar{width:6px;height:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.section.active{animation:fadeIn .25s ease}
+@media(max-width:1200px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
+
+/* bottom nav hidden on desktop */
+.bottom-nav{display:none}
+.mobile-topbar{display:none}
+
+/* ══════════════════════════════════════════
+   MOBILE MODE (≤1024px) — full app redesign
+   Desktop untouched above this breakpoint
+══════════════════════════════════════════ */
+@media(max-width:1024px){
+
+  /* Kill sidebar */
+  .sidebar{display:none !important}
+
+  /* Full width content, pad bottom for nav bar */
+  .main{margin-left:0 !important;max-width:100vw !important;padding:0 0 80px 0 !important;overflow-x:hidden}
+  .main::before{display:none}
+
+  /* ── TOP BAR ── */
+  .mobile-topbar{
+    display:flex !important;
+    align-items:center;justify-content:space-between;
+    padding:12px 16px;
+    background:#0d0d0d;
+    border-bottom:1px solid #222;
+    position:sticky;top:0;z-index:200;
+  }
+  .mobile-topbar-brand{display:flex;align-items:center;gap:8px}
+  .mobile-topbar-brand svg{flex-shrink:0}
+  .mobile-topbar-name{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:#fff}
+  .mobile-topbar-name span{color:#f8931b}
+  .mobile-topbar-right{display:flex;align-items:center;gap:10px}
+  .mobile-topbar-avatar{width:32px;height:32px;border-radius:50%;border:2px solid #f8931b;object-fit:cover;cursor:pointer}
+  .mobile-topbar-avatar-placeholder{width:32px;height:32px;border-radius:50%;background:rgba(248,147,27,.12);border:2px solid #f8931b;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer}
+  .mobile-signout{background:transparent;border:1px solid #2e2e2e;color:#555;padding:5px 10px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:10px;cursor:pointer}
+  .mobile-signout:active{border-color:var(--red);color:var(--red)}
+
+  /* ── BOTTOM NAV BAR ── */
+  .bottom-nav{
+    display:flex !important;
+    position:fixed;bottom:0;left:0;right:0;z-index:999;
+    background:#0d0d0d;
+    border-top:2px solid #f8931b;
+    height:62px;
+    box-shadow:0 -8px 32px rgba(0,0,0,.7);
+  }
+  .bottom-nav-item{
+    flex:1;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;
+    gap:3px;cursor:pointer;
+    color:#444;font-size:9px;letter-spacing:.5px;
+    text-transform:uppercase;
+    font-family:'JetBrains Mono',monospace;
+    background:none;border:none;
+    -webkit-tap-highlight-color:transparent;
+    transition:color .15s;
+  }
+  .bottom-nav-item .bnav-icon{font-size:19px;line-height:1}
+  .bottom-nav-item.active{color:#f8931b}
+  .bottom-nav-item:active{opacity:.6}
+
+  /* ── SECTION PADDING ── */
+  .section{padding:16px 14px 0}
+
+  /* Page header */
+  .page-header{margin-bottom:14px}
+  .page-header h2{font-size:20px}
+  .page-header p{font-size:11px;line-height:1.5}
+  .page-header .breadcrumb{display:none}
+
+  /* Stats grid 2 col */
+  .stats-grid{grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
+  .stat-card{padding:13px 11px}
+  .stat-value{font-size:20px}
+  .stat-label{font-size:8px;letter-spacing:1px}
+  .stat-sub{font-size:9px}
+  .stat-icon{display:none}
+
+  /* Grids stack */
+  .grid-2,.grid-3{grid-template-columns:1fr;gap:12px}
+
+  /* Cards */
+  .card-header{padding:12px 14px;flex-wrap:wrap;gap:6px}
+  .card-title{font-size:13px}
+  .card-body{padding:14px}
+  .chart-wrap{height:170px}
+  .equity-stats{flex-wrap:wrap;gap:10px;padding:12px 14px}
+  .eq-val{font-size:14px}
+  .eq-label{font-size:8px}
+
+  /* Form */
+  .form-grid{grid-template-columns:1fr}
+  .calc-result{grid-template-columns:1fr}
+  .form-actions{flex-direction:column}
+  .form-actions .btn{width:100%;justify-content:center;padding:13px}
+  .info-box{padding:12px 13px}
+  .info-box p{font-size:11px}
+
+  /* Checklist */
+  .check-text{font-size:11px}
+
+  /* Login */
+  .login-card{padding:28px 20px;margin:14px}
+  .login-logo-text h1{font-size:17px}
+  .login-tagline{font-size:12px}
+
+  /* ── MOBILE TRADE CARDS ── */
+  .table-wrap{overflow-x:hidden}
+  .mobile-trade-card{
+    background:var(--surface2);
+    border:1px solid var(--border2);
+    border-left:3px solid var(--border2);
+    border-radius:var(--radius);
+    padding:13px;margin-bottom:10px;
+    display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;
+  }
+  .mobile-trade-card.win-card{border-left-color:var(--accent)}
+  .mobile-trade-card.loss-card{border-left-color:var(--red)}
+  .mtc-header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding-bottom:9px;border-bottom:1px solid var(--border);margin-bottom:2px}
+  .mtc-pair{font-family:var(--display);font-weight:800;font-size:15px;color:#fff}
+  .mtc-right{display:flex;align-items:center;gap:8px}
+  .mtc-result{font-weight:700;font-size:14px}
+  .mtc-win{color:var(--accent)}.mtc-loss{color:var(--red)}.mtc-be{color:#fff}
+  .mtc-delete{background:none;border:none;color:#444;font-size:17px;cursor:pointer;padding:2px 4px;line-height:1}
+  .mtc-delete:active{color:var(--red)}
+  .mtc-row{display:flex;flex-direction:column;gap:2px}
+  .mtc-label{font-size:8px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase}
+  .mtc-val{font-size:12px;color:var(--text2)}
+  .mtc-full{grid-column:1/-1}
+  .mtc-notes{color:var(--text3) !important;font-size:11px !important;line-height:1.4}
+  .mobile-trade-cards-wrap{padding:2px 0}
+}
+</style>
+</head>
+<body>
+
+<!-- ════ LOGIN SCREEN ════ -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg width="48" height="48" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <rect width="100" height="100" rx="16" fill="#000"/>
+        <circle cx="50" cy="50" r="34" stroke="white" stroke-width="6" fill="none"/>
+        <line x1="50" y1="4" x2="50" y2="20" stroke="white" stroke-width="6" stroke-linecap="round"/>
+        <line x1="50" y1="80" x2="50" y2="96" stroke="white" stroke-width="6" stroke-linecap="round"/>
+        <line x1="4" y1="50" x2="20" y2="50" stroke="white" stroke-width="6" stroke-linecap="round"/>
+        <line x1="80" y1="50" x2="96" y2="50" stroke="white" stroke-width="6" stroke-linecap="round"/>
+        <line x1="35" y1="36" x2="35" y2="64" stroke="#f8931b" stroke-width="2.5"/><rect x="30" y="42" width="10" height="14" rx="1" fill="#f8931b"/>
+        <line x1="50" y1="28" x2="50" y2="72" stroke="#f8931b" stroke-width="2.5"/><rect x="44" y="36" width="12" height="26" rx="1" fill="#f8931b"/>
+        <line x1="65" y1="40" x2="65" y2="62" stroke="#f8931b" stroke-width="2.5"/><rect x="60" y="44" width="10" height="12" rx="1" fill="#f8931b"/>
+      </svg>
+      <div class="login-logo-text">
+        <h1>OSA Trading<br>Journal</h1>
+        <p>ONE SHOT ALGO SYSTEM</p>
+      </div>
+    </div>
+    <p class="login-tagline"><strong>OSA gives you the signal.</strong><br>This journal sizes it, tracks it,<br>and syncs it across every device.</p>
+    <button class="btn-google" onclick="signInWithGoogle()">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+      Continue with Google
+    </button>
+    <div class="login-loading" id="loginLoading"><div class="spinner"></div><span style="font-size:11px;color:var(--text3)">Signing you in...</span></div>
+    <div class="login-features">
+      <div class="login-feature"><span>☁️</span>Cloud sync</div>
+      <div class="login-feature"><span>📱</span>Any device</div>
+      <div class="login-feature"><span>🔒</span>Private</div>
+      <div class="login-feature"><span>⚡</span>Real-time</div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MAIN APP ════ -->
+<div class="app" id="mainApp" style="display:none">
+
+  <!-- DESKTOP SIDEBAR (hidden on mobile) -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+        <svg width="34" height="34" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100" height="100" rx="12" fill="#000"/>
+          <circle cx="50" cy="50" r="34" stroke="white" stroke-width="6" fill="none"/>
+          <line x1="50" y1="4" x2="50" y2="20" stroke="white" stroke-width="6" stroke-linecap="round"/>
+          <line x1="50" y1="80" x2="50" y2="96" stroke="white" stroke-width="6" stroke-linecap="round"/>
+          <line x1="4" y1="50" x2="20" y2="50" stroke="white" stroke-width="6" stroke-linecap="round"/>
+          <line x1="80" y1="50" x2="96" y2="50" stroke="white" stroke-width="6" stroke-linecap="round"/>
+          <line x1="35" y1="36" x2="35" y2="64" stroke="#f8931b" stroke-width="2.5"/><rect x="30" y="42" width="10" height="14" rx="1" fill="#f8931b"/>
+          <line x1="50" y1="28" x2="50" y2="72" stroke="#f8931b" stroke-width="2.5"/><rect x="44" y="36" width="12" height="26" rx="1" fill="#f8931b"/>
+          <line x1="65" y1="40" x2="65" y2="62" stroke="#f8931b" stroke-width="2.5"/><rect x="60" y="44" width="10" height="12" rx="1" fill="#f8931b"/>
+        </svg>
+        <div style="font-family:var(--display);font-weight:800;font-size:15px;color:#fff;line-height:1.1;">Trading<br>Journal</div>
+      </div>
+      <p style="font-size:9px;letter-spacing:2px;color:#555;">ONE SHOT ALGO SYSTEM</p>
+    </div>
+    <nav class="nav">
+      <div class="nav-section">Main</div>
+      <div class="nav-item active" onclick="showSection('dashboard')"><span class="icon">📊</span><span>Dashboard</span></div>
+      <div class="nav-item" onclick="showSection('log')"><span class="icon">📋</span><span>Trade Log</span></div>
+      <div class="nav-item" onclick="showSection('add')"><span class="icon">➕</span><span>Add Trade</span></div>
+      <div class="nav-section">System</div>
+      <div class="nav-item" onclick="showSection('settings')"><span class="icon">⚙️</span><span>Settings</span></div>
+      <div class="nav-item" onclick="showSection('checklist')"><span class="icon">✅</span><span>OSA Checklist</span></div>
+    </nav>
+    <div class="sidebar-user">
+      <div class="sync-badge"><div class="sync-dot"></div>Synced</div>
+      <div class="user-row">
+        <div class="user-avatar-placeholder" id="userAvatarWrap">👤</div>
+        <div class="user-info">
+          <div class="user-name" id="userName">Loading...</div>
+          <div class="user-email" id="userEmail"></div>
+        </div>
+      </div>
+      <button class="btn-signout" onclick="signOut()">↩ Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- MOBILE TOP BAR (hidden on desktop) -->
+    <div class="mobile-topbar" id="mobileTopbar">
+      <div class="mobile-topbar-brand">
+        <svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+          <rect width="100" height="100" rx="12" fill="#000"/>
+          <circle cx="50" cy="50" r="34" stroke="white" stroke-width="7" fill="none"/>
+          <line x1="50" y1="4" x2="50" y2="20" stroke="white" stroke-width="7" stroke-linecap="round"/>
+          <line x1="50" y1="80" x2="50" y2="96" stroke="white" stroke-width="7" stroke-linecap="round"/>
+          <line x1="4" y1="50" x2="20" y2="50" stroke="white" stroke-width="7" stroke-linecap="round"/>
+          <line x1="80" y1="50" x2="96" y2="50" stroke="white" stroke-width="7" stroke-linecap="round"/>
+          <line x1="35" y1="36" x2="35" y2="64" stroke="#f8931b" stroke-width="3"/><rect x="30" y="42" width="10" height="14" rx="1" fill="#f8931b"/>
+          <line x1="50" y1="28" x2="50" y2="72" stroke="#f8931b" stroke-width="3"/><rect x="44" y="36" width="12" height="26" rx="1" fill="#f8931b"/>
+          <line x1="65" y1="40" x2="65" y2="62" stroke="#f8931b" stroke-width="3"/><rect x="60" y="44" width="10" height="12" rx="1" fill="#f8931b"/>
+        </svg>
+        <span class="mobile-topbar-name">OSA <span>Journal</span></span>
+      </div>
+      <div class="mobile-topbar-right">
+        <div class="mobile-topbar-avatar-placeholder" id="mobileAvatarWrap" onclick="signOut()">👤</div>
+        <button class="mobile-signout" onclick="signOut()">Sign out</button>
+      </div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section class="section active" id="dashboard">
+      <div class="page-header">
+        <div class="breadcrumb">Overview</div>
+        <h2>Performance Dashboard</h2>
+        <p>OSA gives you the signal — this tracks whether you executed it correctly.</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card green"><div class="stat-label">Net P&amp;L (R)</div><div class="stat-value" id="statPnl">0.00</div><div class="stat-sub" id="statPnlUsd">$0.00 estimated</div><div class="stat-icon">💰</div></div>
+        <div class="stat-card blue"><div class="stat-label">Win Rate</div><div class="stat-value" id="statWR">—</div><div class="stat-sub" id="statWRsub">0 wins / 0 losses</div><div class="stat-icon">🎯</div></div>
+        <div class="stat-card gold"><div class="stat-label">Profit Factor</div><div class="stat-value" id="statPF">—</div><div class="stat-sub">Gross win / Gross loss</div><div class="stat-icon">⚡</div></div>
+        <div class="stat-card red"><div class="stat-label">Avg R:R</div><div class="stat-value" id="statRR">—</div><div class="stat-sub" id="statRRsub">0 closed trades</div><div class="stat-icon">📐</div></div>
+      </div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-header"><div class="card-title">📈 Cumulative Equity Curve</div><span class="card-badge badge-green">LIVE</span></div>
+        <div class="equity-stats">
+          <div><div class="eq-label">Start Balance</div><div class="eq-val" id="eqStart" style="color:var(--text)">—</div></div>
+          <div><div class="eq-label">Current Balance</div><div class="eq-val" id="eqCurrent" style="color:var(--accent)">—</div></div>
+          <div><div class="eq-label">Peak Balance</div><div class="eq-val" id="eqPeak" style="color:#fff">—</div></div>
+          <div><div class="eq-label">Max Drawdown</div><div class="eq-val" id="eqDD" style="color:var(--red)">—</div></div>
+        </div>
+        <div class="card-body"><div class="chart-wrap"><canvas id="equityChart"></canvas></div></div>
+      </div>
+      <div class="grid-2">
+        <div class="card"><div class="card-header"><div class="card-title">🔬 OSA Mode Breakdown</div></div><div class="card-body" id="osaModeBreakdown"><div class="empty-state" style="padding:24px"><div class="icon">📊</div><p>Log trades to see OSA mode performance.</p></div></div></div>
+        <div class="card"><div class="card-header"><div class="card-title">🌍 Session Breakdown</div></div><div class="card-body" id="sessionBreakdown"><div class="empty-state" style="padding:24px"><div class="icon">🕐</div><p>Log trades to see session performance.</p></div></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">🕐 Recent Trades</div><span class="card-badge badge-blue" id="recentCount">0 trades</span></div>
+        <div class="table-wrap" id="recentTradesTable"><div class="empty-state"><div class="icon">📝</div><h3>No trades logged yet</h3><p>Head to <strong style="color:var(--accent)">Add Trade</strong> to log your first OSA trade.</p></div></div>
+      </div>
+    </section>
+
+    <!-- TRADE LOG -->
+    <section class="section" id="log">
+      <div class="page-header"><div class="breadcrumb">Journal</div><h2>Trade Log</h2><p>Full history — synced to your account, available on every device.</p></div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">All Trades</div><div style="display:flex;gap:8px;align-items:center"><span class="card-badge badge-green" id="logCount">0</span><button class="btn btn-danger" onclick="clearAllTrades()" style="padding:6px 12px;font-size:11px;">🗑 Clear All</button></div></div>
+        <div class="table-wrap" id="fullTradeLog"><div class="empty-state"><div class="icon">📋</div><h3>No trades yet</h3></div></div>
+      </div>
+    </section>
+
+    <!-- ADD TRADE -->
+    <section class="section" id="add">
+      <div class="page-header"><div class="breadcrumb">Journal → Add</div><h2>Log New Trade</h2><p>OSA gives you the entry &amp; stop — enter them below to auto-size your position.</p></div>
+      <div class="info-box"><p><strong>OSA Workflow:</strong> One Shot Algo identifies your entry and stop. Paste them below and the journal calculates your exact position size so you never risk more than your defined % per trade.</p></div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Trade Details</div><span class="card-badge badge-green">OSA-POWERED</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group"><label>Date <span class="req">*</span></label><input type="date" id="fDate"/></div>
+            <div class="form-group"><label>Pair / Instrument <span class="req">*</span></label><input type="text" id="fPair" placeholder="e.g. EURUSD, XAUUSD, BTC/USD"/></div>
+            <div class="form-group"><label>Session</label><select id="fSession"><option value="">— Select —</option><option>London</option><option>New York</option><option>London/NY Overlap</option><option>Asian</option><option>Sydney</option></select></div>
+            <div class="form-group"><label>OSA Mode <span class="req">*</span><span class="hint">Pick the exact mode used in One Shot Algo (Scalp / Day / Swing / HTF)</span></label><select id="fOSAMode" onchange="calcPosition()"><option value="">— Select OSA Mode —</option><option>Scalp</option><option>Day</option><option>Swing</option><option>HTF</option></select></div>
+            <div class="form-group"><label>Risk % <span class="req">*</span></label><input type="number" id="fRisk" placeholder="e.g. 1" step="0.1" min="0.01" max="10" oninput="calcPosition()"/></div>
+            <div class="form-group"><label>Direction</label><select id="fDirection"><option value="Long">Long (Buy)</option><option value="Short">Short (Sell)</option></select></div>
+            <div class="form-group"><label>Entry Price (from OSA)</label><input type="number" id="fEntry" placeholder="OSA entry price" step="any" oninput="calcPosition()"/></div>
+            <div class="form-group"><label>Stop Loss (from OSA)</label><input type="number" id="fStop" placeholder="OSA stop level" step="any" oninput="calcPosition()"/></div>
+            <div class="form-group"><label>Take Profit (from OSA)</label><input type="number" id="fTP" placeholder="OSA target" step="any"/></div>
+            <div class="form-group full">
+              <label>📐 Auto-Calculated Position Size</label>
+              <div class="calc-result">
+                <div class="calc-item"><label>Risk Amount ($)</label><div class="val neutral" id="calcRiskAmt">Enter account size in Settings</div></div>
+                <div class="calc-item"><label>Stop Distance</label><div class="val neutral" id="calcStopDist">—</div></div>
+                <div class="calc-item"><label>Position Size</label><div class="val" id="calcPosSize">—</div></div>
+              </div>
+            </div>
+            <div class="form-group"><label>Result (R)</label><input type="number" id="fResult" placeholder="e.g. 2.5, -1, 0" step="0.01"/></div>
+            <div class="form-group"><label>Status</label><select id="fStatus"><option value="Win">Win ✅</option><option value="Loss">Loss ❌</option><option value="BE">Break Even ➖</option><option value="Open">Open ⏳</option></select></div>
+            <div class="form-group"><label>Screenshot Link</label><input type="url" id="fScreenshot" placeholder="https://tradingview.com/..."/></div>
+            <div class="form-group full"><label>Notes</label><textarea id="fNotes" placeholder="What OSA showed you (trend color, signals, filters) and why you took / skipped this trade. Include emotional state and execution quality."></textarea></div>
+          </div>
+          <div class="form-actions"><button class="btn btn-secondary" onclick="resetForm()">Clear Form</button><button class="btn btn-primary" onclick="addTrade()">➕ Log Trade</button></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="section" id="settings">
+      <div class="page-header"><div class="breadcrumb">System</div><h2>Settings</h2><p>Configure your account for accurate position sizing.</p></div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">💼 Account Settings</div></div>
+          <div class="card-body">
+            <div class="settings-section">
+              <div class="settings-label">Account Size</div>
+              <div class="form-group" style="margin-bottom:16px;"><label>Account Balance ($)</label><input type="number" id="sAccountSize" placeholder="e.g. 10000" oninput="saveSettings()"/></div>
+              <div class="form-group" style="margin-bottom:16px;"><label>Default Risk % Per Trade</label><input type="number" id="sDefaultRisk" placeholder="e.g. 1" step="0.1" oninput="saveSettings()"/></div>
+              <div class="form-group"><label>Instrument Type</label><select id="sInstrument" onchange="saveSettings()"><option value="forex">Forex (lots)</option><option value="crypto">Crypto (units)</option><option value="indices">Indices (contracts)</option><option value="stocks">Stocks (shares)</option></select></div>
+            </div>
+            <div class="info-box gold" style="margin-top:16px;"><p><strong>Position Sizing Formula:</strong><br>Risk Amount = Balance × Risk%<br>Stop Distance = |Entry − Stop|<br>Position Size = Risk Amount ÷ Stop Distance</p></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 Journal Stats</div></div>
+          <div class="card-body">
+            <div class="settings-section"><div class="settings-label">Quick Summary</div><div id="settingsStats">Loading...</div></div>
+            <hr class="divider"/>
+            <div class="settings-section"><div class="settings-label">Data Management</div><div style="display:flex;flex-direction:column;gap:10px;"><button class="btn btn-secondary" onclick="exportCSV()">📤 Export CSV</button><button class="btn btn-danger" onclick="clearAllTrades()">🗑 Clear All Trades</button></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CHECKLIST -->
+    <section class="section" id="checklist">
+      <div class="page-header"><div class="breadcrumb">System → OSA</div><h2>OSA Pre-Trade Checklist</h2><p>Run through this before every entry. Any unchecked box = wait for the next setup.</p></div>
+      <div class="grid-2">
+        <div>
+          <div class="info-box" style="margin-bottom:20px;"><p><strong>The OSA Rule:</strong> Every trade must originate from a One Shot Algo signal. If you can't check all 3 core boxes, do not enter.</p></div>
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-header"><div class="card-title">⚡ Core OSA Criteria</div><span class="card-badge badge-green">REQUIRED</span></div>
+            <div class="card-body"><div class="checklist">
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text"><strong>Was the OSA trend filter aligned?</strong><br>Trend color matched trade direction before entry.</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text"><strong>Did you wait for a valid OSA signal?</strong><br>Confirmed entry signal from One Shot Algo — not anticipation.</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text"><strong>Did you size based on this sheet's risk %?</strong><br>Position size was calculated using this journal — not guessed.</div></div>
+            </div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">📋 Pre-Market Routine</div><span class="card-badge badge-blue">DAILY</span></div>
+            <div class="card-body"><div class="checklist">
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">Reviewed economic calendar for high-impact news</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">Identified key S/R levels on HTF (Daily, Weekly)</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">OSA loaded and calibrated on active pairs</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">Daily bias aligned with OSA HTF direction</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">Risk per trade confirmed in journal settings</div></div>
+            </div></div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:20px;">
+            <div class="card-header"><div class="card-title">🌙 Post-Trade Review</div><span class="card-badge badge-gold">AFTER EACH TRADE</span></div>
+            <div class="card-body"><div class="checklist">
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">Trade logged in journal with all fields completed</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">Screenshot captured and link pasted in trade log</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">Result recorded in R multiples (not just $ P&amp;L)</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">Notes include what OSA showed and emotional state</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">Reviewed if I followed the OSA signal correctly</div></div>
+            </div></div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">🧠 Psychology Check</div><span class="card-badge badge-red">WEEKLY</span></div>
+            <div class="card-body"><div class="checklist">
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">I am trading with a clear, calm mindset today</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">I am not revenge trading after a recent loss</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">I accept that OSA gives the signal — I only execute</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">I reviewed this week's trades for pattern mistakes</div></div>
+              <div class="check-item" onclick="toggleCheck(this)"><div class="check-box"><span class="check-mark">✓</span></div><div class="check-text">My risk per trade suits my current drawdown level</div></div>
+            </div></div>
+          </div>
+        </div>
+      </div>
+      <div class="info-box red" style="margin-top:4px;"><p><strong>Remember:</strong> On the chart, use One Shot Algo for entries and exits. In this journal, select the OSA mode, paste screenshots, and log results in R. <em>"OSA gives you the signal — this tool makes sure you size and track it correctly."</em></p></div>
+    </section>
+
+  </main>
+
+  <!-- MOBILE BOTTOM NAV (hidden on desktop) -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bottom-nav-item active" onclick="showSection('dashboard')" id="bnav-dashboard">
+      <span class="bnav-icon">📊</span>Dashboard
+    </button>
+    <button class="bottom-nav-item" onclick="showSection('log')" id="bnav-log">
+      <span class="bnav-icon">📋</span>Log
+    </button>
+    <button class="bottom-nav-item" onclick="showSection('add')" id="bnav-add">
+      <span class="bnav-icon">➕</span>Add
+    </button>
+    <button class="bottom-nav-item" onclick="showSection('settings')" id="bnav-settings">
+      <span class="bnav-icon">⚙️</span>Settings
+    </button>
+    <button class="bottom-nav-item" onclick="showSection('checklist')" id="bnav-checklist">
+      <span class="bnav-icon">✅</span>Checklist
+    </button>
+  </nav>
+</div>
+
+<!-- SAVING INDICATOR -->
+<div id="savingIndicator"><div class="spinner" style="width:14px;height:14px;border-width:2px;"></div>Saving...</div>
+
+<!-- PWA INSTALL BANNER -->
+<div id="installBanner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:88888;background:#0d0d0d;border-top:2px solid #f8931b;padding:16px 24px;align-items:center;justify-content:space-between;gap:16px;font-family:'JetBrains Mono',monospace;box-shadow:0 -8px 40px rgba(248,147,27,.15);">
+  <div style="display:flex;align-items:center;gap:14px;">
+    <svg width="36" height="36" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><rect width="100" height="100" rx="16" fill="#000"/><circle cx="50" cy="50" r="34" stroke="white" stroke-width="6" fill="none"/><line x1="50" y1="4" x2="50" y2="20" stroke="white" stroke-width="6" stroke-linecap="round"/><line x1="50" y1="80" x2="50" y2="96" stroke="white" stroke-width="6" stroke-linecap="round"/><line x1="4" y1="50" x2="20" y2="50" stroke="white" stroke-width="6" stroke-linecap="round"/><line x1="80" y1="50" x2="96" y2="50" stroke="white" stroke-width="6" stroke-linecap="round"/><line x1="35" y1="36" x2="35" y2="64" stroke="#f8931b" stroke-width="2.5"/><rect x="30" y="42" width="10" height="14" rx="1" fill="#f8931b"/><line x1="50" y1="28" x2="50" y2="72" stroke="#f8931b" stroke-width="2.5"/><rect x="44" y="36" width="12" height="26" rx="1" fill="#f8931b"/><line x1="65" y1="40" x2="65" y2="62" stroke="#f8931b" stroke-width="2.5"/><rect x="60" y="44" width="10" height="12" rx="1" fill="#f8931b"/></svg>
+    <div><div style="color:#fff;font-weight:700;font-size:13px;margin-bottom:2px;">Install OSA Trading Journal</div><div style="color:#555;font-size:11px;">Works offline · Saves to home screen · No app store needed</div></div>
+  </div>
+  <div style="display:flex;gap:10px;flex-shrink:0;">
+    <button onclick="dismissInstall()" style="background:transparent;border:1px solid #2e2e2e;color:#555;padding:9px 16px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:12px;cursor:pointer;">Not now</button>
+    <button onclick="installApp()" style="background:#f8931b;border:none;color:#000;padding:9px 20px;border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;cursor:pointer;">📲 Install App</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><strong id="toastTitle">Done</strong><span id="toastMsg"></span></div>
+
+<script>
+// ── MOBILE MODE ENFORCER ──────────────────────────────────
+// Runs before anything else — forces mobile layout on touch devices
+(function() {
+  const isMobile = (
+    'ontouchstart' in window ||
+    navigator.maxTouchPoints > 0 ||
+    /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+  );
+  if (isMobile) {
+    document.documentElement.style.setProperty('--is-mobile', '1');
+    // Inject a style tag that overrides with !important for mobile
+    const s = document.createElement('style');
+    s.textContent = `
+      .sidebar { display: none !important; }
+      .bottom-nav { display: flex !important; }
+      .mobile-topbar { display: flex !important; }
+      .main { margin-left: 0 !important; max-width: 100vw !important; padding: 0 0 80px 0 !important; overflow-x: hidden !important; }
+      .main::before { display: none !important; }
+      .stats-grid { grid-template-columns: 1fr 1fr !important; }
+      .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
+      .form-grid { grid-template-columns: 1fr !important; }
+      .calc-result { grid-template-columns: 1fr !important; }
+    `;
+    document.head.appendChild(s);
+  }
+})();
+
+// ══════════════════════════════════════════════════════════
+//  FIREBASE CONFIG  ← Replace ALL values with your own
+//  Firebase Console → Project Settings → Your apps → SDK setup
+// ══════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyBgFOUF7-VQxssBtXyq9VHSbXbWeInXIiY",
+  authDomain:        "osa-trading-journal.firebaseapp.com",
+  projectId:         "osa-trading-journal",
+  storageBucket:     "osa-trading-journal.firebasestorage.app",
+  messagingSenderId: "175599326455",
+  appId:             "1:175599326455:web:fc3e6a1fae93945b09aff2"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.firestore();
+
+// Handle redirect result (mobile sign-in comes back here)
+auth.getRedirectResult().catch(err => {
+  if (err.code !== 'auth/no-current-user') {
+    console.error('Redirect error:', err);
+  }
+});
+
+// ── STATE ──────────────────────────────────────────────────
+let trades   = [];
+let settings = JSON.parse(localStorage.getItem('osa_settings')||'{"accountSize":10000,"defaultRisk":1,"instrument":"forex"}');
+let currentUser = null;
+let equityChart = null;
+let deferredInstallPrompt = null;
+let unsubscribeTrades = null;
+
+// ── AUTH STATE ─────────────────────────────────────────────
+auth.onAuthStateChanged(user => {
+  if (user) {
+    currentUser = user;
+    showApp(user);
+    listenToTrades(user.uid);
+  } else {
+    currentUser = null;
+    if (unsubscribeTrades) unsubscribeTrades();
+    trades = [];
+    showLogin();
+  }
+});
+
+function showLogin() {
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('mainApp').style.display = 'none';
+  document.getElementById('loginLoading').classList.remove('show');
+}
+
+function showApp(user) {
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainApp').style.display = 'flex';
+  document.getElementById('userName').textContent  = user.displayName || 'Trader';
+  document.getElementById('userEmail').textContent = user.email || '';
+  // Desktop avatar
+  if (user.photoURL) {
+    document.getElementById('userAvatarWrap').innerHTML =
+      `<img src="${user.photoURL}" class="user-avatar" onerror="this.parentElement.innerHTML='👤'" alt=""/>`;
+  }
+  // Mobile avatar
+  const mobileAv = document.getElementById('mobileAvatarWrap');
+  if (mobileAv) {
+    if (user.photoURL) {
+      mobileAv.innerHTML = `<img src="${user.photoURL}" class="mobile-topbar-avatar" onerror="this.innerHTML='👤'" alt=""/>`;
+    } else {
+      mobileAv.textContent = (user.displayName||'T')[0].toUpperCase();
+    }
+  }
+  loadSettings();
+  setToday();
+  if (settings.defaultRisk) document.getElementById('fRisk').value = settings.defaultRisk;
+  setTimeout(() => {
+    if (deferredInstallPrompt && !localStorage.getItem('osa_install_dismissed'))
+      document.getElementById('installBanner').style.display = 'flex';
+  }, 4000);
+}
+
+function signInWithGoogle() {
+  document.getElementById('loginLoading').classList.add('show');
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithRedirect(provider).catch(err => {
+    document.getElementById('loginLoading').classList.remove('show');
+    toast('Sign in failed', err.message, true);
+  });
+}
+
+function signOut() {
+  if (!confirm('Sign out of OSA Journal?')) return;
+  if (unsubscribeTrades) unsubscribeTrades();
+  auth.signOut();
+}
+
+// ── FIRESTORE REAL-TIME LISTENER ──────────────────────────
+function listenToTrades(uid) {
+  if (unsubscribeTrades) unsubscribeTrades();
+  unsubscribeTrades = db
+    .collection('users').doc(uid).collection('trades')
+    .orderBy('date','desc')
+    .onSnapshot(snap => {
+      trades = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderAll();
+    }, err => console.error('Firestore:', err));
+}
+
+async function saveTrade(trade) {
+  if (!currentUser) return;
+  showSaving();
+  const { id, ...data } = trade;
+  await db.collection('users').doc(currentUser.uid)
+    .collection('trades').doc(String(trade.id)).set(data);
+  hideSaving();
+}
+
+async function deleteTradeDB(id) {
+  if (!currentUser) return;
+  await db.collection('users').doc(currentUser.uid)
+    .collection('trades').doc(String(id)).delete();
+}
+
+async function clearAllDB() {
+  if (!currentUser) return;
+  showSaving();
+  const snap = await db.collection('users').doc(currentUser.uid).collection('trades').get();
+  const batch = db.batch();
+  snap.docs.forEach(d => batch.delete(d.ref));
+  await batch.commit();
+  hideSaving();
+}
+
+// ── TRADE ACTIONS ─────────────────────────────────────────
+async function addTrade() {
+  const fDate = document.getElementById('fDate').value;
+  const fPair = document.getElementById('fPair').value.trim().toUpperCase();
+  const fOSA  = document.getElementById('fOSAMode').value;
+  if (!fDate) { toast('Missing Date','Please select a trade date.',true); return; }
+  if (!fPair) { toast('Missing Pair','Please enter the instrument.',true); return; }
+  if (!fOSA)  { toast('Missing OSA Mode','Select Scalp / Day / Swing / HTF.',true); return; }
+
+  const entry   = parseFloat(document.getElementById('fEntry').value)||null;
+  const stop    = parseFloat(document.getElementById('fStop').value)||null;
+  const risk    = parseFloat(document.getElementById('fRisk').value)||null;
+  const acct    = parseFloat(settings.accountSize)||null;
+  const stopDist= (entry&&stop)?Math.abs(entry-stop):null;
+  const riskAmt = (acct&&risk)?acct*risk/100:null;
+  const posSize = (riskAmt&&stopDist)?riskAmt/stopDist:null;
+
+  const trade = {
+    id: Date.now(),
+    date: fDate, pair: fPair,
+    session: document.getElementById('fSession').value,
+    osaMode: fOSA,
+    direction: document.getElementById('fDirection').value,
+    risk, entry, stop,
+    tp: parseFloat(document.getElementById('fTP').value)||null,
+    stopDist,
+    riskAmt:  riskAmt  ? +riskAmt.toFixed(2)  : null,
+    posSize:  posSize  ? +posSize.toFixed(2)   : null,
+    result:   parseFloat(document.getElementById('fResult').value)||0,
+    status:   document.getElementById('fStatus').value,
+    screenshot: document.getElementById('fScreenshot').value.trim(),
+    notes:      document.getElementById('fNotes').value.trim(),
+    createdAt:  new Date().toISOString()
+  };
+
+  await saveTrade(trade);
+  resetForm(); setToday();
+  if (settings.defaultRisk) document.getElementById('fRisk').value = settings.defaultRisk;
+  toast('Trade Logged ✅', `${trade.pair} • ${trade.osaMode} • ${trade.status}`);
+  showSection('log');
+}
+
+async function deleteTrade(id) {
+  if (!confirm('Delete this trade?')) return;
+  await deleteTradeDB(id);
+  toast('Trade deleted','');
+}
+
+async function clearAllTrades() {
+  if (!confirm('Clear ALL trades? This cannot be undone.')) return;
+  await clearAllDB();
+  toast('All trades cleared','');
+}
+
+function resetForm() {
+  ['fPair','fSession','fOSAMode','fDirection','fEntry','fStop','fTP','fResult','fStatus','fScreenshot','fNotes'].forEach(id => {
+    const e = document.getElementById(id);
+    if (e.tagName==='SELECT') e.selectedIndex=0; else e.value='';
+  });
+  document.getElementById('fRisk').value = settings.defaultRisk||'';
+  calcPosition();
+}
+
+// ── SETTINGS ──────────────────────────────────────────────
+function saveSettings() {
+  settings.accountSize = parseFloat(document.getElementById('sAccountSize').value)||settings.accountSize;
+  settings.defaultRisk = parseFloat(document.getElementById('sDefaultRisk').value)||settings.defaultRisk;
+  settings.instrument  = document.getElementById('sInstrument').value;
+  localStorage.setItem('osa_settings', JSON.stringify(settings));
+  calcPosition(); renderSettingsStats();
+}
+function loadSettings() {
+  if (settings.accountSize) document.getElementById('sAccountSize').value = settings.accountSize;
+  if (settings.defaultRisk) document.getElementById('sDefaultRisk').value = settings.defaultRisk;
+  if (settings.instrument)  document.getElementById('sInstrument').value  = settings.instrument;
+}
+
+// ── POSITION CALC ─────────────────────────────────────────
+function calcPosition() {
+  const entry   = parseFloat(document.getElementById('fEntry').value);
+  const stop    = parseFloat(document.getElementById('fStop').value);
+  const risk    = parseFloat(document.getElementById('fRisk').value);
+  const acct    = parseFloat(settings.accountSize)||0;
+  const riskAmt = acct&&risk ? acct*risk/100 : null;
+  const stopDist= (entry&&stop&&!isNaN(entry)&&!isNaN(stop)) ? Math.abs(entry-stop) : null;
+  el('calcRiskAmt').textContent  = riskAmt ? '$'+riskAmt.toFixed(2) : (acct?'—':'Set account size in Settings');
+  el('calcRiskAmt').className    = 'val'+(riskAmt?'':' neutral');
+  el('calcStopDist').textContent = stopDist ? stopDist.toFixed(5) : '—';
+  if (riskAmt&&stopDist&&stopDist>0) { el('calcPosSize').textContent=(riskAmt/stopDist).toFixed(2)+' units'; el('calcPosSize').className='val'; }
+  else { el('calcPosSize').textContent='—'; el('calcPosSize').className='val neutral'; }
+}
+
+// ── RENDER ────────────────────────────────────────────────
+function renderAll() {
+  renderStats(); renderEquityChart(); renderRecentTrades();
+  renderFullLog(); renderBreakdowns(); renderSettingsStats();
+}
+
+function renderStats() {
+  const closed = trades.filter(t=>t.status!=='Open');
+  const wins   = closed.filter(t=>t.status==='Win');
+  const losses = closed.filter(t=>t.status==='Loss');
+  const totalR = trades.reduce((s,t)=>s+(t.result||0),0);
+  const winRate= closed.length?(wins.length/closed.length*100):null;
+  const grossW = wins.reduce((s,t)=>s+Math.max(t.result||0,0),0);
+  const grossL = Math.abs(losses.reduce((s,t)=>s+Math.min(t.result||0,0),0));
+  const pf     = grossL>0?grossW/grossL:(grossW>0?Infinity:null);
+  const avgRR  = closed.length?(totalR/closed.length):null;
+  const acct   = parseFloat(settings.accountSize)||0;
+  const risk   = parseFloat(settings.defaultRisk)||1;
+  const pnlUsd = acct?(totalR*acct*risk/100):0;
+  el('statPnl').textContent   = (totalR>=0?'+':'')+totalR.toFixed(2)+'R';
+  el('statPnl').style.color   = totalR>0?'var(--accent)':totalR<0?'var(--red)':'var(--text)';
+  el('statPnlUsd').textContent= acct?(pnlUsd>=0?'+$':'-$')+Math.abs(pnlUsd).toFixed(2)+' est.':'Set account in Settings';
+  el('statWR').textContent    = winRate!==null?winRate.toFixed(1)+'%':'—';
+  el('statWRsub').textContent = `${wins.length} wins / ${losses.length} losses`;
+  el('statPF').textContent    = pf!==null?(pf===Infinity?'∞':pf.toFixed(2)):'—';
+  el('statRR').textContent    = avgRR!==null?(avgRR>=0?'+':'')+avgRR.toFixed(2)+'R':'—';
+  el('statRR').style.color    = avgRR>0?'var(--accent)':avgRR<0?'var(--red)':'var(--text2)';
+  el('statRRsub').textContent = `${closed.length} closed trades`;
+}
+
+function renderEquityChart() {
+  const acct  = parseFloat(settings.accountSize)||10000;
+  const risk  = parseFloat(settings.defaultRisk)||1;
+  const sorted= [...trades].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const labels= ['Start'], data=[acct];
+  let running = acct;
+  sorted.forEach(t=>{ running+=(t.result||0)*acct*risk/100; labels.push(t.date+' '+t.pair); data.push(+running.toFixed(2)); });
+  const peak=Math.max(...data); let maxDD=0,peakSoFar=data[0];
+  data.forEach(v=>{ peakSoFar=Math.max(peakSoFar,v); maxDD=Math.max(maxDD,peakSoFar-v); });
+  el('eqStart').textContent  = '$'+acct.toLocaleString();
+  el('eqCurrent').textContent= '$'+running.toFixed(2);
+  el('eqPeak').textContent   = '$'+peak.toFixed(2);
+  el('eqDD').textContent     = maxDD>0?'-$'+maxDD.toFixed(2):'$0';
+  el('eqCurrent').style.color= running>=acct?'var(--accent)':'var(--red)';
+  const ctx=document.getElementById('equityChart').getContext('2d');
+  const grad=ctx.createLinearGradient(0,0,0,220);
+  grad.addColorStop(0,'rgba(248,147,27,0.35)'); grad.addColorStop(1,'rgba(248,147,27,0)');
+  if (equityChart) equityChart.destroy();
+  equityChart=new Chart(ctx,{type:'line',data:{labels,datasets:[{data,borderColor:'#f8931b',backgroundColor:grad,borderWidth:2,pointRadius:data.length>20?0:4,pointHoverRadius:6,pointBackgroundColor:'#f8931b',fill:true,tension:0.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#141414',borderColor:'#2e2e2e',borderWidth:1,titleColor:'#a0a0a0',bodyColor:'#f8931b',bodyFont:{family:"'JetBrains Mono'"},callbacks:{label:c=>' $'+c.raw.toLocaleString()}}},scales:{x:{ticks:{color:'#555',font:{size:9,family:"'JetBrains Mono'"},maxTicksLimit:8},grid:{color:'rgba(255,255,255,0.03)'},border:{color:'#222'}},y:{ticks:{color:'#555',font:{size:10,family:"'JetBrains Mono'"},callback:v=>'$'+v.toLocaleString()},grid:{color:'rgba(255,255,255,0.03)'},border:{color:'#222'}}}}});
+}
+
+function renderRecentTrades() {
+  el('recentCount').textContent=trades.length+' trade'+(trades.length!==1?'s':'');
+  el('recentTradesTable').innerHTML=trades.length?buildTradeTable(trades.slice(0,8)):`<div class="empty-state"><div class="icon">📝</div><h3>No trades logged yet</h3><p>Head to <strong style="color:var(--accent)">Add Trade</strong> to log your first OSA trade.</p></div>`;
+}
+
+function renderFullLog() {
+  el('logCount').textContent=trades.length;
+  el('fullTradeLog').innerHTML=trades.length?buildTradeTable(trades,true):`<div class="empty-state"><div class="icon">📋</div><h3>No trades yet</h3></div>`;
+}
+
+function buildTradeTable(data, showDelete = false) {
+  // Mobile: render as cards
+  if (window.innerWidth <= 768) {
+    if (!data.length) return `<div class="empty-state"><div class="icon">📋</div><h3>No trades yet</h3></div>`;
+    const cards = data.map(t => {
+      const isWin  = t.result > 0;
+      const isLoss = t.result < 0;
+      const rc  = isWin ? 'mtc-win' : isLoss ? 'mtc-loss' : 'mtc-be';
+      const bc  = isWin ? 'win-card' : isLoss ? 'loss-card' : '';
+      const dir = t.direction === 'Long' ? '▲' : '▼';
+      const dc  = t.direction === 'Long' ? 'color:var(--accent)' : 'color:var(--red)';
+      const del = showDelete ? `<button class="mtc-delete" onclick="deleteTrade(${t.id})">✕</button>` : '';
+      return `<div class="mobile-trade-card ${bc}">
+        <div class="mtc-header">
+          <span class="mtc-pair">${t.pair} <span style="${dc};font-size:11px">${dir}</span></span>
+          <div class="mtc-right">
+            <span class="mtc-result ${rc}">${t.result>0?'+':''}${t.result}R · ${t.status}</span>
+            ${del}
+          </div>
+        </div>
+        <div class="mtc-row"><span class="mtc-label">Date</span><span class="mtc-val">${t.date}</span></div>
+        <div class="mtc-row"><span class="mtc-label">OSA Mode</span><span class="mtc-val"><span class="osa-badge ${osaClass(t.osaMode)}">${t.osaMode||'—'}</span></span></div>
+        <div class="mtc-row"><span class="mtc-label">Session</span><span class="mtc-val">${t.session||'—'}</span></div>
+        <div class="mtc-row"><span class="mtc-label">Risk</span><span class="mtc-val">${t.risk?t.risk+'%':'—'}</span></div>
+        ${t.screenshot?`<div class="mtc-row mtc-full"><span class="mtc-label">Screenshot</span><span class="mtc-val"><a href="${t.screenshot}" target="_blank" style="color:var(--accent)">🔗 View chart</a></span></div>`:''}
+        ${t.notes?`<div class="mtc-row mtc-full"><span class="mtc-label">Notes</span><span class="mtc-val mtc-notes">${t.notes.substring(0,100)}${t.notes.length>100?'…':''}</span></div>`:''}
+      </div>`;
+    }).join('');
+    return `<div class="mobile-trade-cards-wrap">${cards}</div>`;
+  }
+
+  // Desktop: full table
+  const rows = data.map(t => {
+    const rc  = t.result > 0 ? 'td-win' : t.result < 0 ? 'td-loss' : 'td-be';
+    const ss  = t.screenshot ? `<a href="${t.screenshot}" target="_blank">🔗 View</a>` : '<span style="color:var(--text3)">—</span>';
+    const del = showDelete ? `<td class="td-delete" onclick="deleteTrade(${t.id})">✕</td>` : '';
+    const dir = t.direction === 'Long' ? '▲' : '▼';
+    const dc  = t.direction === 'Long' ? 'color:var(--accent)' : 'color:var(--red)';
+    return `<tr><td>${t.date}</td><td class="td-pair">${t.pair} <span style="${dc};font-size:10px">${dir}</span></td><td><span class="session-badge ${sessionClass(t.session)}">${t.session||'—'}</span></td><td><span class="osa-badge ${osaClass(t.osaMode)}">${t.osaMode}</span></td><td>${t.risk?t.risk+'%':'—'}</td><td class="${rc}">${t.result>0?'+':''}${t.result}R</td><td><span class="${rc}">${t.status}</span></td><td class="td-screenshot">${ss}</td><td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;color:var(--text3)">${t.notes?t.notes.substring(0,60)+(t.notes.length>60?'…':''):'—'}</td>${del}</tr>`;
+  }).join('');
+  return `<table><thead><tr><th>Date</th><th>Pair</th><th>Session</th><th>OSA Mode <span style="font-weight:400;color:var(--accent);font-size:8px">▼ signal</span></th><th>Risk</th><th>Result</th><th>Status</th><th>Screenshot</th><th>Notes</th>${showDelete?'<th></th>':''}</tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function renderBreakdowns() {
+  el('osaModeBreakdown').innerHTML=buildBreakdown(t=>t.osaMode);
+  el('sessionBreakdown').innerHTML=buildBreakdown(t=>t.session);
+}
+
+function buildBreakdown(keyFn) {
+  const data={};
+  trades.forEach(t=>{ const k=keyFn(t)||'Unknown'; if(!data[k])data[k]={wins:0,losses:0,total:0,r:0}; data[k].total++; data[k].r+=(t.result||0); if(t.status==='Win')data[k].wins++; if(t.status==='Loss')data[k].losses++; });
+  const entries=Object.entries(data);
+  if(!entries.length) return `<div class="empty-state" style="padding:24px"><div class="icon">📊</div><p>No data yet.</p></div>`;
+  return entries.map(([k,v])=>{ const wr=v.total?(v.wins/v.total*100).toFixed(0):0; const rc=v.r>=0?'var(--accent)':'var(--red)'; return `<div class="perf-row"><span class="perf-label">${k}</span><div class="perf-bar-wrap"><div class="perf-bar" style="width:${wr}%;background:var(--accent)"></div></div><span class="perf-val" style="color:${rc}">${v.r>=0?'+':''}${v.r.toFixed(1)}R</span><span style="font-size:10px;color:var(--text3);margin-left:10px">${wr}% WR</span></div>`; }).join('');
+}
+
+function renderSettingsStats() {
+  const closed=trades.filter(t=>t.status!=='Open');
+  const totalR=trades.reduce((s,t)=>s+(t.result||0),0);
+  const acct=parseFloat(settings.accountSize)||0, risk=parseFloat(settings.defaultRisk)||1;
+  el('settingsStats').innerHTML=`<div class="perf-row"><span class="perf-label">Total Trades</span><span class="perf-val">${trades.length}</span></div><div class="perf-row"><span class="perf-label">Total R</span><span class="perf-val" style="color:${totalR>=0?'var(--accent)':'var(--red)'}">${totalR>=0?'+':''}${totalR.toFixed(2)}R</span></div><div class="perf-row"><span class="perf-label">Est. P&L ($)</span><span class="perf-val" style="color:${totalR>=0?'var(--accent)':'var(--red)'}">${acct?(totalR>=0?'+$':'-$')+Math.abs(totalR*acct*risk/100).toFixed(2):'Set account size'}</span></div><div class="perf-row"><span class="perf-label">Win Rate</span><span class="perf-val">${closed.length?(trades.filter(t=>t.status==='Win').length/closed.length*100).toFixed(1)+'%':'—'}</span></div>`;
+}
+
+function exportCSV() {
+  if (!trades.length) { toast('No trades to export','',true); return; }
+  const h=['Date','Pair','Direction','Session','OSA Mode','Risk %','Entry','Stop','TP','Stop Dist','Risk Amt','Pos Size','Result (R)','Status','Screenshot','Notes'];
+  const r=trades.map(t=>[t.date,t.pair,t.direction,t.session,t.osaMode,t.risk,t.entry,t.stop,t.tp,t.stopDist,t.riskAmt,t.posSize,t.result,t.status,t.screenshot,'"'+(t.notes||'').replace(/"/g,'""')+'"']);
+  const csv=[h,...r].map(x=>x.join(',')).join('\n');
+  const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='OSA_Journal_'+new Date().toISOString().split('T')[0]+'.csv'; a.click();
+  toast('CSV Exported ✅',trades.length+' trades exported');
+}
+
+// ── PWA ───────────────────────────────────────────────────
+if ('serviceWorker' in navigator) window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+window.addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferredInstallPrompt=e; });
+window.addEventListener('appinstalled',()=>{ document.getElementById('installBanner').style.display='none'; toast('App Installed ✅','OSA Journal is on your home screen!'); localStorage.setItem('osa_install_dismissed','1'); });
+function installApp() { if(!deferredInstallPrompt){toast('Install Tip','Use browser menu → "Add to Home Screen"');return;} deferredInstallPrompt.prompt(); deferredInstallPrompt.userChoice.then(()=>{ deferredInstallPrompt=null; document.getElementById('installBanner').style.display='none'; }); }
+function dismissInstall() { document.getElementById('installBanner').style.display='none'; localStorage.setItem('osa_install_dismissed','1'); }
+
+// ── HELPERS ───────────────────────────────────────────────
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // Desktop sidebar
+  const map={dashboard:0,log:1,add:2,settings:3,checklist:4};
+  if(map[id]!==undefined) document.querySelectorAll('.nav-item')[map[id]].classList.add('active');
+  // Mobile bottom nav
+  const bnav = document.getElementById('bnav-'+id);
+  if (bnav) bnav.classList.add('active');
+  if(id==='dashboard') renderAll();
+  // Scroll to top on mobile
+  window.scrollTo(0,0);
+}
+function setToday() { document.getElementById('fDate').value=new Date().toISOString().split('T')[0]; }
+function toggleCheck(e) { e.classList.toggle('checked'); }
+function el(id) { return document.getElementById(id); }
+function osaClass(m) { return {Scalp:'osa-scalp',Day:'osa-day',Swing:'osa-swing',HTF:'osa-htf'}[m]||''; }
+function sessionClass(s) { return {'London':'sess-london','New York':'sess-ny','London/NY Overlap':'sess-overlap','Asian':'sess-asian','Sydney':'sess-sydney'}[s]||''; }
+function showSaving() { document.getElementById('savingIndicator').classList.add('show'); }
+function hideSaving() { setTimeout(()=>document.getElementById('savingIndicator').classList.remove('show'),800); }
+function toast(title,msg,error=false) {
+  const t=document.getElementById('toast');
+  el('toastTitle').textContent=title; el('toastMsg').textContent=msg;
+  t.className='toast'+(error?' error':'')+' show';
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+</script>
+</body>
+</html>
