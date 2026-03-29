@@ -443,11 +443,7 @@ const auth = firebase.auth();
 const db   = firebase.firestore();
 
 // Handle redirect result (mobile sign-in comes back here)
-auth.getRedirectResult().catch(err => {
-  if (err.code !== 'auth/no-current-user') {
-    console.error('Redirect error:', err);
-  }
-});
+// Desktop uses popup sign-in only
 
 // ── STATE ──────────────────────────────────────────────────
 let trades   = [];
@@ -508,7 +504,7 @@ function showApp(user) {
 function signInWithGoogle() {
   document.getElementById('loginLoading').classList.add('show');
   const provider = new firebase.auth.GoogleAuthProvider();
-  auth.signInWithRedirect(provider).catch(err => {
+  auth.signInWithPopup(provider).catch(err => {
     document.getElementById('loginLoading').classList.remove('show');
     toast('Sign in failed', err.message, true);
   });
