@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>OSA Trading Journal | One Shot Algo</title>
 <script>
-// Kill any stale service worker caches immediately
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.getRegistrations().then(r => r.forEach(reg => reg.unregister()));
-  caches.keys().then(k => k.forEach(key => caches.delete(key)));
+// Redirect mobile/touch devices to the mobile version
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0 ||
+    /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+  window.location.replace('mobile.html');
 }
 </script>
 <link rel="manifest" href="manifest.json"/>
@@ -164,138 +164,6 @@ select option{background:var(--surface2)}
 @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .section.active{animation:fadeIn .25s ease}
 @media(max-width:1200px){.stats-grid{grid-template-columns:repeat(2,1fr)}}
-
-/* bottom nav hidden on desktop */
-.bottom-nav{display:none}
-.mobile-topbar{display:none}
-
-/* ══════════════════════════════════════════
-   MOBILE MODE (≤1024px) — full app redesign
-   Desktop untouched above this breakpoint
-══════════════════════════════════════════ */
-@media(max-width:1024px){
-
-  /* Kill sidebar */
-  .sidebar{display:none !important}
-
-  /* Full width content, pad bottom for nav bar */
-  .main{margin-left:0 !important;max-width:100vw !important;padding:0 0 80px 0 !important;overflow-x:hidden}
-  .main::before{display:none}
-
-  /* ── TOP BAR ── */
-  .mobile-topbar{
-    display:flex !important;
-    align-items:center;justify-content:space-between;
-    padding:12px 16px;
-    background:#0d0d0d;
-    border-bottom:1px solid #222;
-    position:sticky;top:0;z-index:200;
-  }
-  .mobile-topbar-brand{display:flex;align-items:center;gap:8px}
-  .mobile-topbar-brand svg{flex-shrink:0}
-  .mobile-topbar-name{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:#fff}
-  .mobile-topbar-name span{color:#f8931b}
-  .mobile-topbar-right{display:flex;align-items:center;gap:10px}
-  .mobile-topbar-avatar{width:32px;height:32px;border-radius:50%;border:2px solid #f8931b;object-fit:cover;cursor:pointer}
-  .mobile-topbar-avatar-placeholder{width:32px;height:32px;border-radius:50%;background:rgba(248,147,27,.12);border:2px solid #f8931b;display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer}
-  .mobile-signout{background:transparent;border:1px solid #2e2e2e;color:#555;padding:5px 10px;border-radius:6px;font-family:'JetBrains Mono',monospace;font-size:10px;cursor:pointer}
-  .mobile-signout:active{border-color:var(--red);color:var(--red)}
-
-  /* ── BOTTOM NAV BAR ── */
-  .bottom-nav{
-    display:flex !important;
-    position:fixed;bottom:0;left:0;right:0;z-index:999;
-    background:#0d0d0d;
-    border-top:2px solid #f8931b;
-    height:62px;
-    box-shadow:0 -8px 32px rgba(0,0,0,.7);
-  }
-  .bottom-nav-item{
-    flex:1;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;
-    gap:3px;cursor:pointer;
-    color:#444;font-size:9px;letter-spacing:.5px;
-    text-transform:uppercase;
-    font-family:'JetBrains Mono',monospace;
-    background:none;border:none;
-    -webkit-tap-highlight-color:transparent;
-    transition:color .15s;
-  }
-  .bottom-nav-item .bnav-icon{font-size:19px;line-height:1}
-  .bottom-nav-item.active{color:#f8931b}
-  .bottom-nav-item:active{opacity:.6}
-
-  /* ── SECTION PADDING ── */
-  .section{padding:16px 14px 0}
-
-  /* Page header */
-  .page-header{margin-bottom:14px}
-  .page-header h2{font-size:20px}
-  .page-header p{font-size:11px;line-height:1.5}
-  .page-header .breadcrumb{display:none}
-
-  /* Stats grid 2 col */
-  .stats-grid{grid-template-columns:1fr 1fr;gap:9px;margin-bottom:14px}
-  .stat-card{padding:13px 11px}
-  .stat-value{font-size:20px}
-  .stat-label{font-size:8px;letter-spacing:1px}
-  .stat-sub{font-size:9px}
-  .stat-icon{display:none}
-
-  /* Grids stack */
-  .grid-2,.grid-3{grid-template-columns:1fr;gap:12px}
-
-  /* Cards */
-  .card-header{padding:12px 14px;flex-wrap:wrap;gap:6px}
-  .card-title{font-size:13px}
-  .card-body{padding:14px}
-  .chart-wrap{height:170px}
-  .equity-stats{flex-wrap:wrap;gap:10px;padding:12px 14px}
-  .eq-val{font-size:14px}
-  .eq-label{font-size:8px}
-
-  /* Form */
-  .form-grid{grid-template-columns:1fr}
-  .calc-result{grid-template-columns:1fr}
-  .form-actions{flex-direction:column}
-  .form-actions .btn{width:100%;justify-content:center;padding:13px}
-  .info-box{padding:12px 13px}
-  .info-box p{font-size:11px}
-
-  /* Checklist */
-  .check-text{font-size:11px}
-
-  /* Login */
-  .login-card{padding:28px 20px;margin:14px}
-  .login-logo-text h1{font-size:17px}
-  .login-tagline{font-size:12px}
-
-  /* ── MOBILE TRADE CARDS ── */
-  .table-wrap{overflow-x:hidden}
-  .mobile-trade-card{
-    background:var(--surface2);
-    border:1px solid var(--border2);
-    border-left:3px solid var(--border2);
-    border-radius:var(--radius);
-    padding:13px;margin-bottom:10px;
-    display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;
-  }
-  .mobile-trade-card.win-card{border-left-color:var(--accent)}
-  .mobile-trade-card.loss-card{border-left-color:var(--red)}
-  .mtc-header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding-bottom:9px;border-bottom:1px solid var(--border);margin-bottom:2px}
-  .mtc-pair{font-family:var(--display);font-weight:800;font-size:15px;color:#fff}
-  .mtc-right{display:flex;align-items:center;gap:8px}
-  .mtc-result{font-weight:700;font-size:14px}
-  .mtc-win{color:var(--accent)}.mtc-loss{color:var(--red)}.mtc-be{color:#fff}
-  .mtc-delete{background:none;border:none;color:#444;font-size:17px;cursor:pointer;padding:2px 4px;line-height:1}
-  .mtc-delete:active{color:var(--red)}
-  .mtc-row{display:flex;flex-direction:column;gap:2px}
-  .mtc-label{font-size:8px;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase}
-  .mtc-val{font-size:12px;color:var(--text2)}
-  .mtc-full{grid-column:1/-1}
-  .mtc-notes{color:var(--text3) !important;font-size:11px !important;line-height:1.4}
-  .mobile-trade-cards-wrap{padding:2px 0}
-}
 </style>
 </head>
 <body>
@@ -380,28 +248,6 @@ select option{background:var(--surface2)}
   </aside>
 
   <main class="main">
-
-    <!-- MOBILE TOP BAR (hidden on desktop) -->
-    <div class="mobile-topbar" id="mobileTopbar">
-      <div class="mobile-topbar-brand">
-        <svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-          <rect width="100" height="100" rx="12" fill="#000"/>
-          <circle cx="50" cy="50" r="34" stroke="white" stroke-width="7" fill="none"/>
-          <line x1="50" y1="4" x2="50" y2="20" stroke="white" stroke-width="7" stroke-linecap="round"/>
-          <line x1="50" y1="80" x2="50" y2="96" stroke="white" stroke-width="7" stroke-linecap="round"/>
-          <line x1="4" y1="50" x2="20" y2="50" stroke="white" stroke-width="7" stroke-linecap="round"/>
-          <line x1="80" y1="50" x2="96" y2="50" stroke="white" stroke-width="7" stroke-linecap="round"/>
-          <line x1="35" y1="36" x2="35" y2="64" stroke="#f8931b" stroke-width="3"/><rect x="30" y="42" width="10" height="14" rx="1" fill="#f8931b"/>
-          <line x1="50" y1="28" x2="50" y2="72" stroke="#f8931b" stroke-width="3"/><rect x="44" y="36" width="12" height="26" rx="1" fill="#f8931b"/>
-          <line x1="65" y1="40" x2="65" y2="62" stroke="#f8931b" stroke-width="3"/><rect x="60" y="44" width="10" height="12" rx="1" fill="#f8931b"/>
-        </svg>
-        <span class="mobile-topbar-name">OSA <span>Journal</span></span>
-      </div>
-      <div class="mobile-topbar-right">
-        <div class="mobile-topbar-avatar-placeholder" id="mobileAvatarWrap" onclick="signOut()">👤</div>
-        <button class="mobile-signout" onclick="signOut()">Sign out</button>
-      </div>
-    </div>
 
     <!-- DASHBOARD -->
     <section class="section active" id="dashboard">
@@ -559,25 +405,6 @@ select option{background:var(--surface2)}
     </section>
 
   </main>
-
-  <!-- MOBILE BOTTOM NAV (hidden on desktop) -->
-  <nav class="bottom-nav" id="bottomNav">
-    <button class="bottom-nav-item active" onclick="showSection('dashboard')" id="bnav-dashboard">
-      <span class="bnav-icon">📊</span>Dashboard
-    </button>
-    <button class="bottom-nav-item" onclick="showSection('log')" id="bnav-log">
-      <span class="bnav-icon">📋</span>Log
-    </button>
-    <button class="bottom-nav-item" onclick="showSection('add')" id="bnav-add">
-      <span class="bnav-icon">➕</span>Add
-    </button>
-    <button class="bottom-nav-item" onclick="showSection('settings')" id="bnav-settings">
-      <span class="bnav-icon">⚙️</span>Settings
-    </button>
-    <button class="bottom-nav-item" onclick="showSection('checklist')" id="bnav-checklist">
-      <span class="bnav-icon">✅</span>Checklist
-    </button>
-  </nav>
 </div>
 
 <!-- SAVING INDICATOR -->
@@ -599,33 +426,8 @@ select option{background:var(--surface2)}
 <div class="toast" id="toast"><strong id="toastTitle">Done</strong><span id="toastMsg"></span></div>
 
 <script>
-// ── MOBILE DETECTION (global) ─────────────────────────────
-const isMobile = (
-  'ontouchstart' in window ||
-  navigator.maxTouchPoints > 0 ||
-  /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
-);
-
-// Force mobile layout immediately if on touch device
-if (isMobile) {
-  const s = document.createElement('style');
-  s.textContent = `
-    .sidebar { display: none !important; }
-    .bottom-nav { display: flex !important; }
-    .mobile-topbar { display: flex !important; }
-    .main { margin-left: 0 !important; max-width: 100vw !important; padding: 0 0 80px 0 !important; overflow-x: hidden !important; }
-    .main::before { display: none !important; }
-    .stats-grid { grid-template-columns: 1fr 1fr !important; }
-    .grid-2, .grid-3 { grid-template-columns: 1fr !important; }
-    .form-grid { grid-template-columns: 1fr !important; }
-    .calc-result { grid-template-columns: 1fr !important; }
-  `;
-  document.head.appendChild(s);
-}
-
 // ══════════════════════════════════════════════════════════
-//  FIREBASE CONFIG  ← Replace ALL values with your own
-//  Firebase Console → Project Settings → Your apps → SDK setup
+//  FIREBASE CONFIG
 // ══════════════════════════════════════════════════════════
 const firebaseConfig = {
   apiKey:            "AIzaSyBgFOUF7-VQxssBtXyq9VHSbXbWeInXIiY",
