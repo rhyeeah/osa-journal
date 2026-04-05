@@ -107,7 +107,10 @@ tr:hover td{background:var(--surface2)}
 .td-screenshot a{color:var(--accent);text-decoration:none}.td-screenshot a:hover{text-decoration:underline}
 .td-delete{color:var(--text3);cursor:pointer;font-size:14px}.td-delete:hover{color:var(--red)}
 .osa-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px}
-.osa-scalp{background:rgba(248,147,27,.1);color:#ffb05c}.osa-day{background:var(--accent-dim);color:var(--accent)}.osa-swing{background:rgba(255,255,255,.07);color:#fff}.osa-htf{background:rgba(248,147,27,.2);color:#ffb05c}
+.osa-t1{background:var(--accent-dim);color:var(--accent)}
+.osa-s1{background:rgba(255,255,255,.07);color:#fff}
+.osa-s2{background:rgba(248,147,27,.2);color:#ffb05c}
+.osa-s3{background:rgba(255,77,106,.12);color:var(--red)}
 .session-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
 .sess-london{background:rgba(255,255,255,.07);color:#fff}.sess-ny{background:var(--accent-dim);color:var(--accent)}.sess-asian{background:rgba(200,200,200,.07);color:#c8c8c8}.sess-overlap{background:rgba(255,77,106,.12);color:var(--red)}.sess-sydney{background:rgba(248,147,27,.1);color:#ffb05c}
 .form-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
@@ -302,7 +305,7 @@ select option{background:var(--surface2)}
             <div class="form-group"><label>Date <span class="req">*</span></label><input type="date" id="fDate"/></div>
             <div class="form-group"><label>Pair / Instrument <span class="req">*</span></label><input type="text" id="fPair" placeholder="e.g. EURUSD, XAUUSD, BTC/USD"/></div>
             <div class="form-group"><label>Session</label><select id="fSession"><option value="">— Select —</option><option>London</option><option>New York</option><option>London/NY Overlap</option><option>Asian</option><option>Sydney</option></select></div>
-            <div class="form-group"><label>OSA Mode <span class="req">*</span><span class="hint">Pick the exact mode used in One Shot Algo (Scalp / Day / Swing / HTF)</span></label><select id="fOSAMode" onchange="calcPosition()"><option value="">— Select OSA Mode —</option><option>Scalp</option><option>Day</option><option>Swing</option><option>HTF</option></select></div>
+            <div class="form-group"><label>OSA Mode <span class="req">*</span><span class="hint">Pick the exact mode used in One Shot Algo</span></label><select id="fOSAMode" onchange="calcPosition()"><option value="">— Select OSA Mode —</option><option>T1 (Swing)</option><option>S1 (Cross)</option><option>S2 (Slope)</option><option>S3 (BBands)</option></select></div>
             <div class="form-group"><label>Risk % <span class="req">*</span></label><input type="number" id="fRisk" placeholder="e.g. 1" step="0.1" min="0.01" max="10" oninput="calcPosition()"/></div>
             <div class="form-group"><label>Direction</label><select id="fDirection"><option value="Long">Long (Buy)</option><option value="Short">Short (Sell)</option></select></div>
             <div class="form-group"><label>Entry Price (from OSA)</label><input type="number" id="fEntry" placeholder="OSA entry price" step="any" oninput="calcPosition()"/></div>
@@ -560,7 +563,7 @@ async function addTrade() {
   const fOSA  = document.getElementById('fOSAMode').value;
   if (!fDate) { toast('Missing Date','Please select a trade date.',true); return; }
   if (!fPair) { toast('Missing Pair','Please enter the instrument.',true); return; }
-  if (!fOSA)  { toast('Missing OSA Mode','Select Scalp / Day / Swing / HTF.',true); return; }
+  if (!fOSA)  { toast('Missing OSA Mode','Select T1 / S1 / S2 / S3.',true); return; }
 
   const entry   = parseFloat(document.getElementById('fEntry').value)||null;
   const stop    = parseFloat(document.getElementById('fStop').value)||null;
@@ -805,7 +808,7 @@ function showSection(id) {
 function setToday() { document.getElementById('fDate').value=new Date().toISOString().split('T')[0]; }
 function toggleCheck(e) { e.classList.toggle('checked'); }
 function el(id) { return document.getElementById(id); }
-function osaClass(m) { return {Scalp:'osa-scalp',Day:'osa-day',Swing:'osa-swing',HTF:'osa-htf'}[m]||''; }
+function osaClass(m) { return {'T1 (Swing)':'osa-t1','S1 (Cross)':'osa-s1','S2 (Slope)':'osa-s2','S3 (BBands)':'osa-s3'}[m]||''; }
 function sessionClass(s) { return {'London':'sess-london','New York':'sess-ny','London/NY Overlap':'sess-overlap','Asian':'sess-asian','Sydney':'sess-sydney'}[s]||''; }
 function showSaving() { document.getElementById('savingIndicator').classList.add('show'); }
 function hideSaving() { setTimeout(()=>document.getElementById('savingIndicator').classList.remove('show'),800); }
