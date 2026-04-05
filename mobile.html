@@ -148,10 +148,10 @@ html,body{background:var(--bg);color:var(--text);font-family:var(--mono);font-si
 
 /* ── BADGES ── */
 .osa-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700}
-.osa-scalp{background:rgba(248,147,27,.1);color:#ffb05c}
-.osa-day{background:var(--accent-dim);color:var(--accent)}
-.osa-swing{background:rgba(255,255,255,.07);color:#fff}
-.osa-htf{background:rgba(248,147,27,.2);color:#ffb05c}
+.osa-t1{background:var(--accent-dim);color:var(--accent)}
+.osa-s1{background:rgba(255,255,255,.07);color:#fff}
+.osa-s2{background:rgba(248,147,27,.2);color:#ffb05c}
+.osa-s3{background:rgba(255,77,106,.12);color:var(--red)}
 
 /* ── FORMS ── */
 .form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
@@ -338,7 +338,7 @@ select option{background:var(--surface2)}
         <label>OSA Mode <span class="req">*</span><span class="hint">Pick the exact mode used in One Shot Algo</span></label>
         <select id="fOSAMode" onchange="calcPos()">
           <option value="">— Select OSA Mode —</option>
-          <option>Scalp</option><option>Day</option><option>Swing</option><option>HTF</option>
+          <option>T1 (Swing)</option><option>S1 (Cross)</option><option>S2 (Slope)</option><option>S3 (BBands)</option>
         </select>
       </div>
       <div class="form-group">
@@ -518,7 +518,13 @@ auth.onAuthStateChanged(user => {
 });
 
 // Handle redirect result (mobile Google sign-in)
-auth.getRedirectResult().catch(() => {});
+auth.getRedirectResult().then(result => {
+  // Redirect completed successfully - onAuthStateChanged will handle it
+}).catch(err => {
+  // Clear any bad redirect state and show login fresh
+  console.log('Redirect error cleared:', err.code);
+  document.getElementById('loginLoading').classList.remove('show');
+});
 
 function showLogin() {
   document.getElementById('loginScreen').classList.remove('hidden');
@@ -592,7 +598,7 @@ async function addTrade() {
   const fOSA  = document.getElementById('fOSAMode').value;
   if (!fDate) { toast('Missing Date','',true); return; }
   if (!fPair) { toast('Missing Pair','',true); return; }
-  if (!fOSA)  { toast('Select OSA Mode','Scalp / Day / Swing / HTF',true); return; }
+  if (!fOSA)  { toast('Select OSA Mode','T1 / S1 / S2 / S3',true); return; }
 
   const entry   = parseFloat(document.getElementById('fEntry').value) || null;
   const stop    = parseFloat(document.getElementById('fStop').value)  || null;
@@ -752,7 +758,7 @@ function buildCards(data, showDel) {
       </div>
       <div class="tc-grid">
         <div class="tc-field"><span class="tc-label">Date</span><span class="tc-val">${t.date}</span></div>
-        <div class="tc-field"><span class="tc-label">OSA Mode</span><span class="tc-val"><span class="osa-badge osa-${(t.osaMode||'').toLowerCase()}">${t.osaMode||'—'}</span></span></div>
+        <div class="tc-field"><span class="tc-label">OSA Mode</span><span class="tc-val"><span class="osa-badge osa-${(t.osaMode||'').toLowerCase().replace(/[^a-z0-9]/g,'').substring(0,2)}">${t.osaMode||'—'}</span></span></div>
         <div class="tc-field"><span class="tc-label">Session</span><span class="tc-val">${t.session||'—'}</span></div>
         <div class="tc-field"><span class="tc-label">Risk</span><span class="tc-val">${t.risk?t.risk+'%':'—'}</span></div>
         ${t.screenshot?`<div class="tc-field tc-full"><span class="tc-label">Screenshot</span><span class="tc-val"><a href="${t.screenshot}" target="_blank" style="color:var(--accent)">🔗 View chart</a></span></div>`:''}
