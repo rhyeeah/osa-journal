@@ -219,6 +219,23 @@ select option{background:var(--surface2)}
 </head>
 <body>
 
+<!-- ════ AUTH LOADING ════ -->
+<div id="authLoading" style="display:none;position:fixed;inset:0;background:#000;z-index:99999;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+  <svg width="52" height="52" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <rect width="100" height="100" rx="16" fill="#000"/>
+    <circle cx="50" cy="50" r="34" stroke="white" stroke-width="6" fill="none"/>
+    <line x1="50" y1="4" x2="50" y2="20" stroke="white" stroke-width="6" stroke-linecap="round"/>
+    <line x1="50" y1="80" x2="50" y2="96" stroke="white" stroke-width="6" stroke-linecap="round"/>
+    <line x1="4" y1="50" x2="20" y2="50" stroke="white" stroke-width="6" stroke-linecap="round"/>
+    <line x1="80" y1="50" x2="96" y2="50" stroke="white" stroke-width="6" stroke-linecap="round"/>
+    <line x1="35" y1="36" x2="35" y2="64" stroke="#f8931b" stroke-width="2.5"/><rect x="30" y="42" width="10" height="14" rx="1" fill="#f8931b"/>
+    <line x1="50" y1="28" x2="50" y2="72" stroke="#f8931b" stroke-width="2.5"/><rect x="44" y="36" width="12" height="26" rx="1" fill="#f8931b"/>
+    <line x1="65" y1="40" x2="65" y2="62" stroke="#f8931b" stroke-width="2.5"/><rect x="60" y="44" width="10" height="12" rx="1" fill="#f8931b"/>
+  </svg>
+  <div class="spinner" style="width:28px;height:28px;border-width:3px"></div>
+  <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#555;letter-spacing:1px">LOADING...</span>
+</div>
+
 <!-- ════ LOGIN ════ -->
 <div id="loginScreen">
   <div class="login-card">
@@ -503,30 +520,50 @@ let settings = JSON.parse(localStorage.getItem('osa_settings') || '{"accountSize
 let currentUser = null;
 let equityChart = null;
 let unsubscribe = null;
+let authResolved = false;
 
 // ══ AUTH ═════════════════════════════════════════════════
+// Show loading spinner while Firebase resolves auth state
+// This prevents the login screen flashing before redirect result comes back
+document.getElementById('loginScreen').classList.add('hidden');
+document.getElementById('authLoading').style.display = 'flex';
+
 auth.onAuthStateChanged(user => {
+  // Hide loading
+  document.getElementById('authLoading').style.display = 'none';
+
   if (user) {
     currentUser = user;
     showApp(user);
     listenTrades(user.uid);
   } else {
-    currentUser = null;
-    if (unsubscribe) unsubscribe();
-    showLogin();
+    // Only show login if we've already processed the redirect result
+    if (authResolved) {
+      currentUser = null;
+      if (unsubscribe) unsubscribe();
+      showLogin();
+    }
   }
 });
 
-// Handle redirect result (mobile Google sign-in)
+// Handle redirect result FIRST before showing anything
 auth.getRedirectResult().then(result => {
-  // Redirect completed successfully - onAuthStateChanged will handle it
+  authResolved = true;
+  if (!result || !result.user) {
+    // No redirect in progress - show login normally
+    document.getElementById('authLoading').style.display = 'none';
+    document.getElementById('loginScreen').classList.remove('hidden');
+  }
+  // If result.user exists, onAuthStateChanged will handle showing the app
 }).catch(err => {
-  // Clear any bad redirect state and show login fresh
-  console.log('Redirect error cleared:', err.code);
-  document.getElementById('loginLoading').classList.remove('show');
+  authResolved = true;
+  document.getElementById('authLoading').style.display = 'none';
+  document.getElementById('loginScreen').classList.remove('hidden');
+  console.log('Redirect error:', err.code);
 });
 
 function showLogin() {
+  document.getElementById('authLoading').style.display = 'none';
   document.getElementById('loginScreen').classList.remove('hidden');
   document.getElementById('appScreen').classList.remove('show');
   document.getElementById('loginLoading').classList.remove('show');
