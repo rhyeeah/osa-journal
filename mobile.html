@@ -520,47 +520,22 @@ let settings = JSON.parse(localStorage.getItem('osa_settings') || '{"accountSize
 let currentUser = null;
 let equityChart = null;
 let unsubscribe = null;
-let authResolved = false;
 
 // ══ AUTH ═════════════════════════════════════════════════
-// Show loading spinner while Firebase resolves auth state
-// This prevents the login screen flashing before redirect result comes back
-document.getElementById('loginScreen').classList.add('hidden');
-document.getElementById('authLoading').style.display = 'flex';
-
 auth.onAuthStateChanged(user => {
-  // Hide loading
-  document.getElementById('authLoading').style.display = 'none';
-
   if (user) {
     currentUser = user;
     showApp(user);
     listenTrades(user.uid);
   } else {
-    // Only show login if we've already processed the redirect result
-    if (authResolved) {
-      currentUser = null;
-      if (unsubscribe) unsubscribe();
-      showLogin();
-    }
+    currentUser = null;
+    if (unsubscribe) unsubscribe();
+    showLogin();
   }
 });
 
-// Handle redirect result FIRST before showing anything
-auth.getRedirectResult().then(result => {
-  authResolved = true;
-  if (!result || !result.user) {
-    // No redirect in progress - show login normally
-    document.getElementById('authLoading').style.display = 'none';
-    document.getElementById('loginScreen').classList.remove('hidden');
-  }
-  // If result.user exists, onAuthStateChanged will handle showing the app
-}).catch(err => {
-  authResolved = true;
-  document.getElementById('authLoading').style.display = 'none';
-  document.getElementById('loginScreen').classList.remove('hidden');
-  console.log('Redirect error:', err.code);
-});
+// Handle redirect fallback result
+auth.getRedirectResult().catch(() => {});
 
 function showLogin() {
   document.getElementById('authLoading').style.display = 'none';
@@ -584,10 +559,20 @@ function showApp(user) {
 
 function signInWithGoogle() {
   document.getElementById('loginLoading').classList.add('show');
-  auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider()).catch(err => {
-    document.getElementById('loginLoading').classList.remove('show');
-    toast('Sign in failed', err.message, true);
-  });
+  const provider = new firebase.auth.GoogleAuthProvider();
+  auth.signInWithPopup(provider)
+    .then(result => {
+      // onAuthStateChanged will handle showing the app
+    })
+    .catch(err => {
+      document.getElementById('loginLoading').classList.remove('show');
+      if (err.code === 'auth/popup-blocked') {
+        // Popup was blocked - fall back to redirect
+        auth.signInWithRedirect(provider);
+      } else if (err.code !== 'auth/popup-closed-by-user') {
+        toast('Sign in failed', err.message, true);
+      }
+    });
 }
 
 function doSignOut() {
